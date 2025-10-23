@@ -29,7 +29,47 @@ std::unordered_map<int, cv::Rect> roi_color(const cv::Mat& input) {
      *      4. 将颜色 和 矩形位置 存入 map 中
      */
     std::unordered_map<int, cv::Rect> res;
-    // IMPLEMENT YOUR CODE HERE
 
+    //stage1:预处理
+    cv::Mat gray;
+    if (input.channels() == 3)
+        cv::cvtColor(input,gray,cv::COLOR_BGR2GRAY);
+    else
+        gray =input.clone();
+    cv::Mat binary;
+    cv::threshold(gray,binary,0,255,cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+
+    //stage2:找轮廓
+    std::vector<std::vector<cv::Point>>contours;
+    cv::findContours(binary,contours,cv::RETR_EXTERNAL,cv::CHAIN_APPROX_SIMPLE);
+
+    //开始使用统计方法计算颜色
+    for (size_t i = 0;i<contours.size();++i) {
+        
+        cv::Rect rect = cv::boundingRect(contours[i]);//得到矩形
+        cv::Mat roi = input(rect); //取出ROI区域,仍是彩色图        
+        
+        
+        long long sumB=0,sumG=0,sumR=0;
+        int sum=roi.rows*roi.cols;
+        for (int y=0;y<roi.rows;++y) {
+            for (int x=0;x<roi.cols;++x) {
+                cv::Vec3b px = roi.at<cv::Vec3b>(y, x);
+                sumB += px[0];
+                sumG += px[1];
+                sumR += px[2];
+            }
+        }
+        //归一化，计算平均值
+        double avgB = sumB/double(sum);
+        double avgG = sumG/double(sum);
+        double avgR = sumR/double(sum);
+        int colorKey = 0;  // 默认蓝色,BGR顺序
+        if (avgG > avgB && avgG > avgR) colorKey = 1;  
+        if (avgR > avgB && avgR > avgG) colorKey = 2;  
+
+        
+        res[colorKey] = rect;
+    }
     return res;
 }

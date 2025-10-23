@@ -43,9 +43,25 @@ std::vector<cv::Mat> erode(const cv::Mat& src_erode, const cv::Mat& src_dilate) 
      *     2. dilate 之后的图像中，图中的小脚被消除了(类似答案中的样子)
      *     以上两个检查点需要自己检查，满足条件 则输入 p 通过, 否则输入 f 表示不通过
      */
+
     cv::Mat dst_erode, dst_dilate;
 
-    // TODO: 在这里实现你的代码
+    //stage1：先转成灰度图
+    cv::Mat gray_erode, gray_dilate;          
+    cv::cvtColor(src_erode,gray_erode,cv::COLOR_BGR2GRAY);
+    cv::cvtColor(src_dilate,gray_dilate,cv::COLOR_BGR2GRAY);
+
+    //stage2：二值化处理
+    cv::Mat bin_erode, bin_dilate;
+    cv::threshold(gray_erode, bin_erode, 50, 255, cv::THRESH_BINARY);
+    cv::threshold(gray_dilate, bin_dilate, 50, 255, cv::THRESH_BINARY);
+
+    //stage3：生成腐蚀核和膨胀核
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3, 3));
+
+    //stage4：调用函数
+    cv::erode(bin_erode,dst_erode,kernel,cv::Point(-1,-1),3);  
+    cv::dilate(bin_dilate,dst_dilate,kernel,cv::Point(-1,-1),3); 
 
     return {dst_erode, dst_dilate};
 }

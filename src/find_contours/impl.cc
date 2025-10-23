@@ -17,7 +17,34 @@ std::vector<std::vector<cv::Point>> find_contours(const cv::Mat& input) {
      * 运行测试点，你找到的轮廓与答案的轮廓一样就行。
      */
     
-    std::vector<std::vector<cv::Point>> res;
-    // IMPLEMENT YOUR CODE HERE
+
+    //Stage1:单通道加2值化
+    cv::Mat gray, binary;
+    if (input.channels() == 3)
+        cv::cvtColor(input, gray, cv::COLOR_BGR2GRAY);
+    else
+        gray = input.clone();
+    cv::threshold(gray, binary, 0, 255,cv::THRESH_BINARY_INV | cv::THRESH_OTSU);
+
+    //Stage2:返回层次结构
+    std::vector<std::vector<cv::Point>> contours;
+    std::vector<cv::Vec4i> hierarchy;
+    cv::findContours(binary, contours, hierarchy,
+    cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
+
+    //stage3L:只保留内层轮廓
+    std::vector<std::vector<cv::Point>>res;
+    for (size_t i=0; i<contours.size();++i)
+        if (hierarchy[i][2]==-1)    
+            res.push_back(contours[i]);
+
+    //可视化
+    cv::Mat show = cv::Mat::zeros(binary.size(), CV_8UC3); 
+    //做出了一张黑色画布
+    cv::drawContours(show, res, -1, cv::Scalar(0, 255, 0), 2);
+    cv::imshow("调试-最内层轮廓", show);
+    cv::waitKey(0); 
+    cv::destroyAllWindows();
+
     return res;
 }
